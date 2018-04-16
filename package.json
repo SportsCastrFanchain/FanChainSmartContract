@@ -1,0 +1,21 @@
+{
+  "name": "fancoin",
+  "version": "1.0.0",
+  "description": "This software is based on https://github.com/OpenZeppelin/zeppelin-solidity, which is licensed under the <a href=\"https://github.com/OpenZeppelin/zeppelin-solidity/blob/master/LICENSE\">MIT License</a>.",
+  "main": "truffle-config.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ConciergeSoftwareDesign/HybridBlock.git"
+  },
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "truffle-hdwallet-provider": "0.0.3"
+  }
+}
