@@ -21,6 +21,26 @@ contract('FanCoin', accounts => {
       assert(await contractInstance.allowance(owner, accounts[3]) == allowanceAmt);
     });
 
+    it('should not allow approval override', async () => {
+      const result = await contractInstance.approve(
+        accounts[9],
+        allowanceAmt,
+        { from: owner }
+      );
+
+      assert(result);
+      assert(await contractInstance.allowance(owner, accounts[3]) == allowanceAmt);
+
+      await assertAsyncThrows(
+        () => contractInstance.approve(
+          accounts[9], 
+          allowanceAmt + 2,
+          { from: owner }
+        ),
+        /revert/g
+      );
+    });
+
     it('should not allow spending of more than allowance', async () =>
       assertAsyncThrows(async () =>
         await contractInstance.transferFrom(

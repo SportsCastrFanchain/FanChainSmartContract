@@ -39,25 +39,24 @@ contract Stampable is ERC20 {
     event TokenStamp (address indexed from, uint256 tokenStamped, uint256 stamp, uint256 amt);
 
     /**
-    * @dev Function to stamp a token
-    * @param _owner address The owner of the tokens being stamped
+    * @dev Function to stamp a token in the msg.sender's wallet
     * @param _tokenToStamp uint256 The tokenId of theirs to stamp (0 for unstamped tokens)
     * @param _stamp uint256 The new stamp to apply
     * @param _amt uint256 The quantity of tokens to stamp
     */
-    function stampToken (address _owner, uint256 _tokenToStamp, uint256 _stamp, uint256 _amt)
+    function stampToken (uint256 _tokenToStamp, uint256 _stamp, uint256 _amt)
         onlyStampingWhitelisted
         public returns (bool) {
-        require(_amt <= balances[_owner].tokens[_tokenToStamp].amount);
+        require(_amt <= balances[msg.sender].tokens[_tokenToStamp].amount);
 
         // Subtract balance of 0th token ID _amt value.
-        removeToken(_owner, _tokenToStamp, _amt);
+        removeToken(msg.sender, _tokenToStamp, _amt);
 
         // "Stamp" the token
-        addToken(_owner, _stamp, _amt);
+        addToken(msg.sender, _stamp, _amt);
 
         // Emit the stamping event
-        emit TokenStamp(_owner, _tokenToStamp, _stamp, _amt);
+        emit TokenStamp(msg.sender, _tokenToStamp, _stamp, _amt);
 
         return true;
     }

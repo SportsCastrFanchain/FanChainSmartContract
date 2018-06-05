@@ -13,6 +13,7 @@ contract FanCoin is Stampable {
     mapping (address => mapping (address => uint256)) public allowed;
 
     event TokenTransfer (address indexed from, address indexed to, uint256 tokenId, uint256 value);
+    event MintTransfer  (address indexed from, address indexed to, uint256 originalTokenId, uint256 tokenId, uint256 value);
 
     modifier onlyOwner {
         require(msg.sender == owner);
@@ -25,11 +26,11 @@ contract FanCoin is Stampable {
     function FanCoin() public {
         owner = 0x0d750fD015143C822db2a3A350F305f25096b681;
         name = "FanChain";
-        symbol = "FAN";
+        symbol = "FANX";
         decimals = 4;
         
         // Total supply is one billion tokens
-        totalSupply = 1e9 * uint256(10) ** decimals; 
+        totalSupply = 6e8 * uint256(10) ** decimals; 
 
         // Add the owner to the stamping whitelist
         stampingWhitelist[owner] = true;
@@ -102,7 +103,8 @@ contract FanCoin is Stampable {
         internalTransfer(msg.sender, _to, _tokenId, _value);
         
         // Notify that a transfer happened
-        emit TokenTransfer(msg.sender, _to, _tokenId, _value);    
+        emit TokenTransfer(msg.sender, _to, _tokenId, _value);
+        emit Transfer(msg.sender, _to, _value);
 
         return true;
     }
@@ -118,9 +120,17 @@ contract FanCoin is Stampable {
         require(_tokenIds.length == _values.length);
         require(_tokenIds.length < 100); // Arbitrary limit
 
-        // Transfer every type of token specified. Requiring success
+        // Do verification first
         for (uint i = 0; i < _tokenIds.length; i++) {
-            require(transferToken(_to, _tokenIds[i], _values[i]));
+            require(_values[i] > 0);
+            require(_values[i] <= balances[msg.sender].tokens[_tokenIds[i]].amount);
+        }
+
+        // Transfer every type of token specified
+        for (i = 0; i < _tokenIds.length; i++) {
+            require(internalTransfer(msg.sender, _to, _tokenIds[i], _values[i]));
+            emit TokenTransfer(msg.sender, _to, _tokenIds[i], _values[i]);
+            emit Transfer(msg.sender, _to, _values[i]);
         }
     
         return true; 
@@ -140,8 +150,8 @@ contract FanCoin is Stampable {
         // of the tokens we need to
         uint256 _tokensToTransfer = _value;
         while (_tokensToTransfer > 0) {
-            uint256 tokenId = balances[msg.sender].tokenIndex[0];
-            uint256 tokenBalance = balances[msg.sender].tokens[tokenId].amount;
+            uint256 tokenId = balances[_from].tokenIndex[0];
+            uint256 tokenBalance = balances[_from].tokens[tokenId].amount;
 
             if (tokenBalance >= _tokensToTransfer) {
                 require(internalTransfer(_from, _to, tokenId, _tokensToTransfer));
@@ -195,6 +205,30 @@ contract FanCoin is Stampable {
     }
 
     /**
+    * @dev Transfer and stamp tokens from a mint in one step
+    * @param _to address To send the tokens to
+    * @param _tokenToStamp uint256 The token to stamp (0 is unstamped tokens)
+    * @param _stamp uint256 The new stamp to apply
+    * @param _amount uint256 The number of tokens to stamp and transfer
+    */
+    function mintTransfer(address _to, uint256 _tokenToStamp, uint256 _stamp, uint256 _amount) public 
+        onlyStampingWhitelisted returns (bool) {
+        require(_to != address(0));
+        require(_amount <= balances[msg.sender].tokens[_tokenToStamp].amount);
+
+        // Decrease the amount being sent first
+        removeToken(msg.sender, _tokenToStamp, _amount);
+
+        // Increase receivers token balances
+        addToken(_to, _stamp, _amount);
+
+        emit MintTransfer(msg.sender, _to, _tokenToStamp, _stamp, _amount);
+        emit Transfer(msg.sender, _to, _amount);
+
+        return true;
+    }
+
+    /**
      * @dev Add an address to the whitelist
      * @param _addr address The address to add
      */
@@ -223,6 +257,8 @@ contract FanCoin is Stampable {
     * @param _value uint256 The number of tokens they are allowed to spend
     */
     function approve(address _spender, uint256 _value) public returns (bool) {
+        require(allowed[msg.sender][_spender] == 0);
+
         allowed[msg.sender][_spender] = _value;
         emit Approval(msg.sender, _spender, _value);
         return true;

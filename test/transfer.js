@@ -25,7 +25,7 @@ contract('FanCoin', accounts => {
       const amt = Math.floor(totalSupply * .01); // 1%
       const to = accounts[1];
       const token = 1234;
-      const stampResult = await contractInstance.stampToken(owner, 0, token, amt, {
+      const stampResult = await contractInstance.stampToken(0, token, amt, {
         from: owner
       });
       assert(stampResult, 'Unable to stamp tokens');
@@ -46,7 +46,7 @@ contract('FanCoin', accounts => {
       const final = accounts[2];
       const token = 7777;
 
-      const stampResult = await contractInstance.stampToken(owner, 0, token, stampAmt, {
+      const stampResult = await contractInstance.stampToken(0, token, stampAmt, {
         from: owner
       });
       assert(stampResult, 'Unable to stamp tokens');
@@ -117,7 +117,7 @@ contract('FanCoin', accounts => {
       const amtStamped = amt;
       const to = accounts[1];
 
-      const stampResult = await contractInstance.stampToken(owner, 0, token, amtStamped, {
+      const stampResult = await contractInstance.stampToken(0, token, amtStamped, {
         from: owner
       });
       assert(stampResult, 'Unable to stamp tokens');
@@ -149,6 +149,16 @@ contract('FanCoin', accounts => {
 
       await assertAsyncThrows(async () => 
         contractInstance.transferTokens(to, [0], [-1], {
+          from: accounts[8]
+        })
+      );
+    });
+
+    it('should not be able to transfer null amounts', async () => {
+      const to = accounts[9];
+
+      await assertAsyncThrows(async () => 
+        contractInstance.transferTokens(to, [0, 10], [null, null], {
           from: accounts[8]
         })
       );
@@ -194,7 +204,7 @@ contract('FanCoin', accounts => {
       const stamp = 1337;
       const to = accounts[3];
 
-      const stampResult = await contractInstance.stampToken(owner, 0, stamp, amtStamped, {
+      const stampResult = await contractInstance.stampToken(0, stamp, amtStamped, {
         from: owner
       });
       assert(stampResult, 'Unable to stamp tokens');
@@ -217,7 +227,7 @@ contract('FanCoin', accounts => {
       contractInstance = await FanCoin.new();
 
       await Promise.all(tokens.map(async token => {
-        const stampResult = await contractInstance.stampToken(owner, 0, token, amt, {
+        const stampResult = await contractInstance.stampToken(0, token, amt, {
             from: owner
         });
         assert(stampResult, 'Unable to stamp tokens');
@@ -273,6 +283,112 @@ contract('FanCoin', accounts => {
       await verifyBalance(contractInstance, owner, tokens[1], amt, totalSupply * 0.5);
       await verifyBalance(contractInstance, owner, tokens[2], amt, totalSupply * 0.5);
       await verifyBalance(contractInstance, to, 0, 0, 0);
+    });
+  });
+
+  describe('transferFrom (ERC20)', () => {
+    var contractInstance = null;
+    beforeEach(async () => {
+      contractInstance = await FanCoin.new();
+    });
+
+    it('should be able to transfer on behalf of a user', async () => {
+      const spender = accounts[5];
+      const to = accounts[6];
+      const amt = totalSupply * .02;
+      const allowanceRes = await contractInstance.approve(spender, amt, {
+        from: owner
+      });
+      assert(allowanceRes, 'Unable to setup allowance');
+
+      const res = await contractInstance.transferFrom(owner, to, amt, {
+        from: spender
+      });
+      assert(res, 'Unable to transfer tokens');
+
+      const ownerBalance = await contractInstance.balanceOf(owner);
+      assert(ownerBalance == totalSupply - amt, 'Owner balance is not correct');
+
+      const toBalance = await contractInstance.balanceOf(to);
+      assert(toBalance == amt, 'To balance is incorrect');
+
+      const spenderBalance = await contractInstance.balanceOf(spender);
+      assert(spenderBalance == 0, 'Spender balance is not 0');
+    });
+  });
+
+  describe('mintTransfer', () => {
+    var contractInstance = null;
+    beforeEach(async () => {
+      contractInstance = await FanCoin.new();
+    });
+
+    it('should transfer and stamp unstamped tokens as owner', async () => {
+      const to = accounts[9];
+      const amt = totalSupply * .02;
+      const token = 1337;
+
+      const res = await contractInstance.mintTransfer(to, 0, token, amt, {
+        from: owner
+      });
+      assert(res, 'Error during mintTransfer');
+
+      const balance = await contractInstance.balanceOfToken(to, token);
+      assert(balance == amt, `Expected: ${amt}, Actual: ${balance}`);
+
+      const ownerBalance = await contractInstance.balanceOfToken(owner, token);
+      assert(ownerBalance == 0);
+    });
+
+    it('should transfer and stamp stamped tokens as owner', async () => {
+      const to = accounts[9];
+      const amt = totalSupply * .02;
+      const oldToken  = 443;
+      const token = 1337;
+
+      const stamp = await contractInstance.stampToken(0, oldToken, amt);
+      assert(stamp, 'Unable to initially stamp tokens')
+
+      const res = await contractInstance.mintTransfer(to, oldToken, token, amt, {
+        from: owner
+      });
+      assert(res, 'Error during mintTransfer');
+
+      const balance = await contractInstance.balanceOfToken(to, token);
+      assert(balance == amt, `Expected: ${amt}, Actual: ${balance}`);
+    });
+
+    it('should be able to transfer and stamp as whitelisted', async () => {
+      const to = accounts[9];
+      const from = accounts[5];
+      const amt = totalSupply * .02;
+      const token = 55555;
+
+      const whitelistResult = await contractInstance.addToWhitelist(from, {
+        from: owner
+      });
+      assert(whitelistResult, 'Unable to whitelist the account');
+
+      const ownerTransfer = await contractInstance.transferToken(from, 0, amt, {
+        from: owner
+      });
+      assert(ownerTransfer, 'Unable to initially transfer tokens from user');
+
+      const res = await contractInstance.mintTransfer(to, 0, token, amt, {
+        from: from
+      });
+      assert(res, 'Error during mintTransfer');
+
+      const balance = await contractInstance.balanceOfToken(to, token);
+      assert(balance == amt, `Expected: ${amt}, Actual: ${balance}`);
+    });
+
+    it('should not be able to transfer and stamp as user', async () => {
+      await assertAsyncThrows(async () => 
+        contractInstance.mintTransfer(to, 0, 12, 200, {
+          from: accounts[8]
+        })
+      );
     });
   });
 

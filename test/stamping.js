@@ -18,7 +18,7 @@ contract('FanCoin', accounts => {
       const newStamp = Math.floor(Math.random() * totalSupply) + 1;
       const amount = Math.floor(totalSupply * .10); // 10%
 
-      const stampResult = await contractInstance.stampToken(owner, 0, newStamp, amount, {
+      const stampResult = await contractInstance.stampToken(0, newStamp, amount, {
         from: owner
       });
       assert(stampResult);
@@ -41,12 +41,12 @@ contract('FanCoin', accounts => {
       const amt = Math.floor(totalSupply * .10); // 10%
       const unstampedAmt = Math.floor(amt / 2);
 
-      const stampResult = await contractInstance.stampToken(owner, 0, stamp, amt, {
+      const stampResult = await contractInstance.stampToken(0, stamp, amt, {
         from: owner
       });
       assert(stampResult, 'Unable to stamp the token');
 
-      const unstampResult = await contractInstance.stampToken(owner, stamp, 0, unstampedAmt, {
+      const unstampResult = await contractInstance.stampToken(stamp, 0, unstampedAmt, {
         from: owner
       });
       assert(unstampResult, 'Unable to un-stamp token');
@@ -57,35 +57,11 @@ contract('FanCoin', accounts => {
 
     it('should not allow stamps of more than balance', async () =>
       assertAsyncThrows(async () => 
-        await contractInstance.stampToken(owner, 0, 123, totalSupply + 1, {
+        await contractInstance.stampToken(0, 123, totalSupply + 1, {
           from: owner
         })
       )
     );
-
-    it('should be able to stamp other peoples tokens', async () => {
-      const newStamp = Math.floor(Math.random() * totalSupply) + 1;
-      const amount = Math.floor(totalSupply * .10); // 10%
-
-      const transferResult = await contractInstance.transferToken(
-        accounts[1],
-        0,
-        amount,
-        { from: owner }
-      );
-      assert(transferResult, 'The initial transfer result is invalid');
-
-      const stampResult = await contractInstance.stampToken(accounts[1], 0, newStamp, amount, {
-        from: owner
-      });
-      assert(stampResult, 'The stamping result is invalid');
-
-      const stampedBalance = await contractInstance.balanceOfToken(accounts[1], newStamp);
-      assert(stampedBalance == amount, 'The stamped balance does not match');
-
-      const unstampedBalance = await contractInstance.balanceOfToken(accounts[1], 0);
-      assert(unstampedBalance == 0, 'The unstamped balance does not match');
-    });
 
     it('a user should not be able to stamp tokens', async () => {
       const newStamp = 1234;
@@ -100,7 +76,7 @@ contract('FanCoin', accounts => {
       assert(transferResult, 'The initial transfer result is invalid');
 
       await assertAsyncThrows(async () =>
-        contractInstance.stampToken(accounts[2], 0, newStamp, amount, {
+        contractInstance.stampToken(0, newStamp, amount, {
           from: accounts[3]
         })
       );
@@ -116,12 +92,20 @@ contract('FanCoin', accounts => {
       });
       assert(whitelistResult, 'Unable to whitelist the account');
 
+      const transferResult = await contractInstance.transferToken(
+        from,
+        0,
+        amt,
+        { from: owner }
+      );
+      assert(transferResult, 'The initial transfer result is invalid');
+
       const stampResult = await contractInstance.stampToken(
-        owner, 0, stamp, amt, { from }
+        0, stamp, amt, { from }
       );
       assert(stampResult, 'Unable to stamp tokens');
 
-      const stampedBalance = await contractInstance.balanceOfToken(owner, stamp);
+      const stampedBalance = await contractInstance.balanceOfToken(from, stamp);
       assert(stampedBalance == amt);
     });
   });
