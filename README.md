@@ -1,5 +1,12 @@
 # FanChain by SportsCastr Smart Contract
 
+---
+
+CONTRACT ADDRESS: 0xA22160BEA244F00BEF5a0b1Ca85977b005716Fec
+
+https://etherscan.io/address/0xA22160BEA244F00BEF5a0b1Ca85977b005716Fec
+
+---
 
 FanChain tokens are based on the ERC20 standard but also adopts ERC721-style features when they are distributed or accepted within the FanChain ecosystem (including any wallet that adds support for our DApp.)
 
@@ -15,6 +22,5 @@ Storing the stamped-metadata at the address-level, as opposed to the token level
 While FanChain tokens have non-fungible aspects, they are at their core a fungible (ERC20) token. This fungibility allows for existing systems to utilize FanChain tokens without regard for the stamps.
 
 ---
-
 
 This software is based on https://github.com/OpenZeppelin/zeppelin-solidity, which is licensed under the <a href="https://github.com/OpenZeppelin/zeppelin-solidity/blob/master/LICENSE">MIT License</a>.
