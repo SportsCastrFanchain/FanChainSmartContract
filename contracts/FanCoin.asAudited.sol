@@ -24,9 +24,9 @@ contract FanCoin is Stampable {
     * The constructor for the FanCoin token
     */
     function FanCoin() public {
-        owner = 0x7DDf115B8eEf3058944A3373025FB507efFAD012;
+        owner = 0x0d750fD015143C822db2a3A350F305f25096b681;
         name = "FanChain";
-        symbol = "FANZ";
+        symbol = "FANX";
         decimals = 4;
         
         // Total supply is one billion tokens
